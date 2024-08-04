@@ -8,17 +8,22 @@ import (
 var msg string
 var wg sync.WaitGroup
 
-func updateMessage(s string) {
+func updateMessage(s string, m *sync.Mutex) {
 	defer wg.Done()
+
+	m.Lock()
 	msg = s
+	m.Unlock()
 }
 
 func main() {
 	msg = "Hello world"
 
+	var mutex sync.Mutex
+
 	wg.Add(2)
-	go updateMessage("Hello , Universe !")
-	go updateMessage("Hello , cosmos !")
+	go updateMessage("Hello , Universe !", &mutex)
+	go updateMessage("Hello , cosmos !", &mutex)
 	wg.Wait()
 
 	fmt.Println(msg)
@@ -28,5 +33,8 @@ func main() {
 	//earlier than line no 20 , it also might be we get hello cosmos at sometime
 	//how to check whether we are having race condition
 	// go run -race .
+
+	// solution to this problm is using mutex to lock and unlock resource
+	// its a thread safe operation , there will be no race condition
 
 }
