@@ -82,8 +82,18 @@ func pizzeria(pizzaMaker *Producer) {
 
 	for {
 		currentPizza := makePizza(i)
-		//try to make a pizza
-		//decision
+		if currentPizza != nil {
+			i = currentPizza.pizzaNumber
+			select {
+			case pizzaMaker.data <- *currentPizza:
+
+			case quitChan := <-pizzaMaker.quit:
+				//close channels
+				close(pizzaMaker.data)
+				close(quitChan)
+				return
+			}
+		}
 	}
 }
 
@@ -109,6 +119,43 @@ func main() {
 
 	// create and run consumer
 
+	for i := range pizzaJob.data {
+		if i.pizzaNumber <= NumberOfPizzas {
+			if i.success {
+				color.Green(i.message)
+				color.Green("Order #%d is out for order", i.pizzaNumber)
+			} else {
+				color.Red(i.message)
+				color.Red("the customer is really mad !")
+			}
+		} else {
+			color.Cyan("Done making pizzas")
+			err := pizzaJob.Close()
+			if err != nil {
+				color.Red("*** Error closing channel!", err)
+			}
+		}
+	}
+
 	//print out the ending message
+
+	color.Cyan("------------------------")
+	color.Cyan("Done for the day")
+
+	color.Cyan("We made #%d pizzas , but failed to make #%d , with attempts #%d in total.", pizzaMade, pizzaFailed, total)
+
+	switch {
+	case pizzaFailed > 9:
+		color.Red("It was an awful day")
+	case pizzaFailed >= 6:
+		color.Red("It was not a very good day")
+	case pizzaFailed >= 4:
+		color.Yellow("It was an okay day")
+	case pizzaFailed >= 2:
+		color.Yellow("It was pretty good day")
+	default:
+		color.Green("best day")
+
+	}
 
 }
